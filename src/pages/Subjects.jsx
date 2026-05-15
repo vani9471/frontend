@@ -3,7 +3,7 @@ import {
     Box, Typography, Grid, Card, CardContent, CardActions, 
     Button, IconButton, TextField, InputAdornment, Dialog, 
     DialogTitle, DialogContent, DialogActions, Fab,
-    Avatar, Chip, Stack, MenuItem
+    Avatar, Chip, Stack, MenuItem, CircularProgress, Alert, Snackbar
 } from '@mui/material';
 import { 
     Add as AddIcon, 
@@ -13,24 +13,28 @@ import {
     Book as SubjectIcon,
     AccessTime as TimeIcon,
     Star as CreditIcon,
-    Science as LabIcon
+    Science as LabIcon,
+    CloudUpload as UploadIcon,
+    Description as FileIcon
 } from '@mui/icons-material';
 import axios from 'axios';
+import fileService from '../services/fileService';
 
 const Subjects = () => {
     const [subjects, setSubjects] = useState([]);
-    const [departments, setDepartments] = useState([]);
     const [loading, setLoading] = useState(false);
     const [search, setSearch] = useState('');
     const [open, setOpen] = useState(false);
     const [editMode, setEditMode] = useState(false);
+    const [uploading, setUploading] = useState(false);
+    const [message, setMessage] = useState({ text: '', type: 'success' });
+    const [openSnackbar, setOpenSnackbar] = useState(false);
     const [currentSubject, setCurrentSubject] = useState({
-        name: '', code: '', department: '', credits: 3, hoursPerWeek: 3, semester: 1, isLab: false
+        name: '', code: '', questionBankUrl: '', credits: 3, hoursPerWeek: 3, semester: 1, isLab: false
     });
 
     useEffect(() => {
         fetchSubjects();
-        fetchDepartments();
     }, []);
 
     const fetchSubjects = async () => {
@@ -47,14 +51,21 @@ const Subjects = () => {
         }
     };
 
-    const fetchDepartments = async () => {
+    const handleFileChange = async (e) => {
+        const file = e.target.files[0];
+        if (!file) return;
+
+        setUploading(true);
         try {
-            const res = await axios.get(`${import.meta.env.VITE_API_URL || (import.meta.env.DEV ? 'http://localhost:5000' : 'https://backend-1-x7ra.onrender.com')}/api/departments`, {
-                headers: { Authorization: `Bearer ${JSON.parse(localStorage.getItem('user')).token}` }
-            });
-            setDepartments(res.data.data);
+            const result = await fileService.uploadFile(file);
+            setCurrentSubject({ ...currentSubject, questionBankUrl: result.data.filePath });
+            setMessage({ text: 'Question bank uploaded successfully!', type: 'success' });
+            setOpenSnackbar(true);
         } catch (err) {
-            console.error(err);
+            setMessage({ text: 'Failed to upload file', type: 'error' });
+            setOpenSnackbar(true);
+        } finally {
+            setUploading(false);
         }
     };
 
@@ -62,18 +73,12 @@ const Subjects = () => {
         try {
             const token = JSON.parse(localStorage.getItem('user')).token;
             
-            // Clean up the data before sending
-            const subjectData = { ...currentSubject };
-            if (!subjectData.department) {
-                delete subjectData.department; // Remove empty department so DB doesn't crash
-            }
-
             if (editMode) {
-                await axios.put(`${import.meta.env.VITE_API_URL || (import.meta.env.DEV ? 'http://localhost:5000' : 'https://backend-1-x7ra.onrender.com')}/api/subjects/${currentSubject._id}`, subjectData, {
+                await axios.put(`${import.meta.env.VITE_API_URL || (import.meta.env.DEV ? 'http://localhost:5000' : 'https://backend-1-x7ra.onrender.com')}/api/subjects/${currentSubject._id}`, currentSubject, {
                     headers: { Authorization: `Bearer ${token}` }
                 });
             } else {
-                await axios.post(`${import.meta.env.VITE_API_URL || (import.meta.env.DEV ? 'http://localhost:5000' : 'https://backend-1-x7ra.onrender.com')}/api/subjects`, subjectData, {
+                await axios.post(`${import.meta.env.VITE_API_URL || (import.meta.env.DEV ? 'http://localhost:5000' : 'https://backend-1-x7ra.onrender.com')}/api/subjects`, currentSubject, {
                     headers: { Authorization: `Bearer ${token}` }
                 });
             }
@@ -101,7 +106,7 @@ const Subjects = () => {
 
     const resetForm = () => {
         setCurrentSubject({
-            name: '', code: '', department: '', credits: 3, hoursPerWeek: 3, semester: 1, isLab: false
+            name: '', code: '', questionBankUrl: '', credits: 3, hoursPerWeek: 3, semester: 1, isLab: false
         });
         setEditMode(false);
     };
@@ -164,15 +169,23 @@ const Subjects = () => {
                                     </Box>
                                 </Box>
                                 
-                                <Typography variant="caption" color="textSecondary" sx={{ mb: 1, display: 'block' }}>
-                                    Department: {subject.department?.name || 'N/A'}
-                                </Typography>
-
                                 <Stack direction="row" spacing={1} sx={{ mt: 2 }}>
                                     <Chip label={`${subject.credits} Credits`} size="small" icon={<CreditIcon fontSize="small" />} />
                                     <Chip label={`${subject.hoursPerWeek} hrs/wk`} size="small" icon={<TimeIcon fontSize="small" />} />
                                     <Chip label={`Sem ${subject.semester}`} size="small" color="primary" variant="outlined" />
                                 </Stack>
+
+                                {subject.questionBankUrl && (
+                                    <Button 
+                                        size="small" 
+                                        startIcon={<FileIcon />} 
+                                        sx={{ mt: 2 }}
+                                        href={`${import.meta.env.VITE_API_URL?.replace('/api', '') || ''}${subject.questionBankUrl}`}
+                                        target="_blank"
+                                    >
+                                        View Question Bank
+                                    </Button>
+                                )}
                             </CardContent>
                             <CardActions sx={{ justifyContent: 'flex-end', bgcolor: '#fcfcfc' }}>
                                 <IconButton size="small" onClick={() => { setCurrentSubject(subject); setEditMode(true); setOpen(true); }}><EditIcon fontSize="small" color="primary" /></IconButton>
@@ -196,33 +209,26 @@ const Subjects = () => {
                             sx={{ mb: 3 }}
                             required
                         />
-                        <Grid container spacing={2}>
-                            <Grid item xs={6}>
-                                <TextField
-                                    fullWidth
-                                    label="Subject Code"
-                                    value={currentSubject.code}
-                                    onChange={(e) => setCurrentSubject({ ...currentSubject, code: e.target.value })}
-                                    sx={{ mb: 3 }}
-                                    required
-                                />
-                            </Grid>
-                            <Grid item xs={6}>
-                                <TextField
-                                    fullWidth
-                                    select
-                                    label="Department"
-                                    value={currentSubject.department?._id || currentSubject.department}
-                                    onChange={(e) => setCurrentSubject({ ...currentSubject, department: e.target.value })}
-                                    sx={{ mb: 3 }}
-                                    required
-                                >
-                                    {departments.map((dept) => (
-                                        <MenuItem key={dept._id} value={dept._id}>{dept.name}</MenuItem>
-                                    ))}
-                                </TextField>
-                            </Grid>
-                        </Grid>
+                        <TextField
+                            fullWidth
+                            label="Subject Code"
+                            value={currentSubject.code}
+                            onChange={(e) => setCurrentSubject({ ...currentSubject, code: e.target.value })}
+                            sx={{ mb: 3 }}
+                            required
+                        />
+                        
+                        <Typography variant="subtitle2" sx={{ mb: 1 }}>Question Bank File</Typography>
+                        <Box sx={{ mb: 3, display: 'flex', alignItems: 'center', gap: 2 }}>
+                            <Button variant="outlined" component="label" startIcon={uploading ? <CircularProgress size={20} /> : <UploadIcon />}>
+                                {uploading ? 'Uploading...' : (currentSubject.questionBankUrl ? 'Change File' : 'Upload QB')}
+                                <input type="file" hidden onChange={handleFileChange} accept=".pdf,.xlsx,.xls,.csv" />
+                            </Button>
+                            {currentSubject.questionBankUrl && (
+                                <Typography variant="caption" color="success.main">File Attached ✓</Typography>
+                            )}
+                        </Box>
+
                         <Grid container spacing={2}>
                             <Grid item xs={4}>
                                 <TextField
@@ -268,7 +274,7 @@ const Subjects = () => {
                 </DialogContent>
                 <DialogActions sx={{ p: 3 }}>
                     <Button onClick={() => setOpen(false)}>Cancel</Button>
-                    <Button variant="contained" onClick={handleSave}>{editMode ? 'Update' : 'Create'}</Button>
+                    <Button variant="contained" onClick={handleSave} disabled={uploading}>{editMode ? 'Update' : 'Create'}</Button>
                 </DialogActions>
             </Dialog>
 
@@ -279,6 +285,10 @@ const Subjects = () => {
             >
                 <AddIcon />
             </Fab>
+
+            <Snackbar open={openSnackbar} autoHideDuration={3000} onClose={() => setOpenSnackbar(false)}>
+                <Alert severity={message.type} sx={{ width: '100%' }}>{message.text}</Alert>
+            </Snackbar>
         </Box>
     );
 };
