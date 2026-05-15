@@ -61,12 +61,19 @@ const Subjects = () => {
     const handleSave = async () => {
         try {
             const token = JSON.parse(localStorage.getItem('user')).token;
+            
+            // Clean up the data before sending
+            const subjectData = { ...currentSubject };
+            if (!subjectData.department) {
+                delete subjectData.department; // Remove empty department so DB doesn't crash
+            }
+
             if (editMode) {
-                await axios.put(`${import.meta.env.VITE_API_URL || (import.meta.env.DEV ? 'http://localhost:5000' : 'https://backend-1-x7ra.onrender.com')}/api/subjects/${currentSubject._id}`, currentSubject, {
+                await axios.put(`${import.meta.env.VITE_API_URL || (import.meta.env.DEV ? 'http://localhost:5000' : 'https://backend-1-x7ra.onrender.com')}/api/subjects/${currentSubject._id}`, subjectData, {
                     headers: { Authorization: `Bearer ${token}` }
                 });
             } else {
-                await axios.post(`${import.meta.env.VITE_API_URL || (import.meta.env.DEV ? 'http://localhost:5000' : 'https://backend-1-x7ra.onrender.com')}/api/subjects`, currentSubject, {
+                await axios.post(`${import.meta.env.VITE_API_URL || (import.meta.env.DEV ? 'http://localhost:5000' : 'https://backend-1-x7ra.onrender.com')}/api/subjects`, subjectData, {
                     headers: { Authorization: `Bearer ${token}` }
                 });
             }
@@ -74,7 +81,8 @@ const Subjects = () => {
             fetchSubjects();
             resetForm();
         } catch (err) {
-            alert('Failed to save subject');
+            const errorMsg = err.response?.data?.message || 'Failed to save subject';
+            alert(`Error: ${errorMsg}`);
         }
     };
 
