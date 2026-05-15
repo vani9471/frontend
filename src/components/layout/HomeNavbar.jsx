@@ -41,14 +41,14 @@ const HomeNavbar = () => {
                         <Nav.Link as={Link} to="/">Home</Nav.Link>
                         
                         <NavDropdown title="Regulations" id="regulations-dropdown">
-                            <NavDropdown title="R23" id="r23-dropdown" drop="end">
-                                <NavDropdown.Item as={Link} to="/r23/sem3">Semester 3</NavDropdown.Item>
-                                <NavDropdown.Item as={Link} to="/r23/sem4">Semester 4</NavDropdown.Item>
-                                <NavDropdown.Item as={Link} to="/r23/sem5">Semester 5</NavDropdown.Item>
-                                <NavDropdown.Item as={Link} to="/r23/sem6">Semester 6</NavDropdown.Item>
-                                <NavDropdown.Item as={Link} to="/r23/sem7">Semester 7</NavDropdown.Item>
-                                <NavDropdown.Item as={Link} to="/r23/sem8">Semester 8</NavDropdown.Item>
-                            </NavDropdown>
+                            <NavDropdown.Header className="fw-bold text-primary">Regulation R23</NavDropdown.Header>
+                            <NavDropdown.Divider />
+                            <NavDropdown.Item as={Link} to="/r23/sem3">Semester 3</NavDropdown.Item>
+                            <NavDropdown.Item as={Link} to="/r23/sem4">Semester 4</NavDropdown.Item>
+                            <NavDropdown.Item as={Link} to="/r23/sem5">Semester 5</NavDropdown.Item>
+                            <NavDropdown.Item as={Link} to="/r23/sem6">Semester 6</NavDropdown.Item>
+                            <NavDropdown.Item as={Link} to="/r23/sem7">Semester 7</NavDropdown.Item>
+                            <NavDropdown.Item as={Link} to="/r23/sem8">Semester 8</NavDropdown.Item>
                         </NavDropdown>
 
                         <Nav.Link as={Link} to="/subjects">Subjects</Nav.Link>

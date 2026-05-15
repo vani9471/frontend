@@ -27,7 +27,11 @@ const Register = () => {
             await register(formData);
             navigate('/');
         } catch (err) {
-            setError(err.response?.data?.message || 'Registration failed');
+            setError(
+                err.response?.data?.message ||
+                (err.message === 'Network Error' ? 'Cannot reach server. Is the backend running?' : err.message) ||
+                'Registration failed'
+            );
         }
     };
 
@@ -95,6 +99,7 @@ const Register = () => {
                                     <MenuItem value="student">Student</MenuItem>
                                     <MenuItem value="teacher">Teacher</MenuItem>
                                     <MenuItem value="admin">Admin</MenuItem>
+                                    {/* Values MUST be lowercase to match backend enum: ['admin', 'teacher', 'student'] */}
                                 </TextField>
                             </Box>
                             <Button variant="primary" type="submit" className="w-100 py-2 mb-3" style={{ borderRadius: '8px' }}>
