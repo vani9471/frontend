@@ -24,13 +24,13 @@ const QuestionBankPage = () => {
             setLoading(true);
             try {
                 // Fetch subject details
-                const subRes = await axios.get(`${import.meta.env.VITE_API_URL || 'http://localhost:5000'}/api/subjects`);
+                const subRes = await axios.get(`${import.meta.env.VITE_API_URL || 'https://backend-1-x7ra.onrender.com'}/api/subjects`);
                 const currentSub = subRes.data.data.find(s => s.code === code);
                 
                 if (currentSub) {
                     setSubject(currentSub);
                     // Fetch questions for this subject
-                    const qRes = await axios.get(`${import.meta.env.VITE_API_URL || 'http://localhost:5000'}/api/questions?subject=${currentSub._id}`);
+                    const qRes = await axios.get(`${import.meta.env.VITE_API_URL || 'https://backend-1-x7ra.onrender.com'}/api/questions?subject=${currentSub._id}`);
                     setQuestions(qRes.data.data);
                 } else {
                     setError('Subject not found.');

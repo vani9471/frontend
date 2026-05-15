@@ -20,7 +20,7 @@ const SemesterPage = () => {
         const fetchSubjects = async () => {
             setLoading(true);
             try {
-                const res = await axios.get(`${import.meta.env.VITE_API_URL || 'http://localhost:5000'}/api/subjects?regulation=${reg.toUpperCase()}&semester=${semesterNumber}`);
+                const res = await axios.get(`${import.meta.env.VITE_API_URL || 'https://backend-1-x7ra.onrender.com'}/api/subjects?regulation=${reg.toUpperCase()}&semester=${semesterNumber}`);
                 setSubjects(res.data.data);
                 setError(null);
             } catch (err) {
