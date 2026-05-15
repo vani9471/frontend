@@ -54,6 +54,9 @@ const HomeNavbar = () => {
                         <Nav.Link as={Link} to="/subjects">Subjects</Nav.Link>
                         <Nav.Link as={Link} to="/mock-exams">Mock Exams</Nav.Link>
                         <Nav.Link as={Link} to="/previous-papers">Previous Papers</Nav.Link>
+                        {user && (user.role === 'teacher' || user.role === 'admin') && (
+                            <Nav.Link as={Link} to="/faculty-dashboard" className="text-primary fw-bold">Faculty Portal</Nav.Link>
+                        )}
                         <Nav.Link as={Link} to="/about">About</Nav.Link>
                         <Nav.Link as={Link} to="/contact">Contact</Nav.Link>
                     </Nav>

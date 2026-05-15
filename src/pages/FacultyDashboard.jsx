@@ -4,11 +4,13 @@ import {
     Button, Tabs, Tab, List, ListItem, ListItemText, 
     ListItemIcon, IconButton, TextField, MenuItem,
     CircularProgress, Alert, Snackbar, Card, CardContent,
-    Dialog, DialogTitle, DialogContent, DialogActions, Divider
+    Dialog, DialogTitle, DialogContent, DialogActions, Divider,
+    Table, TableBody, TableCell, TableContainer, TableHead, TableRow
 } from '@mui/material';
 import { 
     CloudUpload, PostAdd, HistoryEdu, AssignmentTurnedIn,
-    Delete, Edit, CheckCircle, Add as AddIcon, Send as SendIcon
+    Delete, Edit, CheckCircle, Add as AddIcon, Send as SendIcon,
+    MenuBook, School
 } from '@mui/icons-material';
 import axios from 'axios';
 import fileService from '../services/fileService';
@@ -22,6 +24,10 @@ const FacultyDashboard = () => {
     const [message, setMessage] = useState({ text: '', type: 'success' });
     const [openSnackbar, setOpenSnackbar] = useState(false);
     
+    // New Subject State
+    const [showSubjectDialog, setShowSubjectDialog] = useState(false);
+    const [newSubject, setNewSubject] = useState({ name: '', code: '', semester: 1, credits: 3, hoursPerWeek: 3 });
+
     // Mock Exam State
     const [showExamDialog, setShowExamDialog] = useState(false);
     const [newExam, setNewExam] = useState({ title: '', duration: 30, subject: '', questions: [] });
@@ -40,7 +46,21 @@ const FacultyDashboard = () => {
         }
     };
 
-    const handleFileChange = (e) => setSelectedFile(e.target.files[0]);
+    const handleSaveSubject = async () => {
+        try {
+            const token = JSON.parse(localStorage.getItem('user')).token;
+            await axios.post(`${import.meta.env.VITE_API_URL || (import.meta.env.DEV ? 'http://localhost:5000' : 'https://backend-1-x7ra.onrender.com')}/api/subjects`, newSubject, {
+                headers: { Authorization: `Bearer ${token}` }
+            });
+            setMessage({ text: 'Subject added successfully!', type: 'success' });
+            setOpenSnackbar(true);
+            setShowSubjectDialog(false);
+            setNewSubject({ name: '', code: '', semester: 1, credits: 3, hoursPerWeek: 3 });
+            fetchSubjects();
+        } catch (err) {
+            alert('Failed to save subject');
+        }
+    };
 
     const handleUploadResource = async (type) => {
         if (!selectedFile || !selectedSubject) {
@@ -54,19 +74,25 @@ const FacultyDashboard = () => {
             const result = await fileService.uploadFile(selectedFile);
             const token = JSON.parse(localStorage.getItem('user')).token;
             
-            const endpoint = type === 'QB' ? '/api/subjects/' + selectedSubject : '/api/previous-papers';
-            const payload = type === 'QB' ? { questionBankUrl: result.data.filePath } : { 
-                subject: selectedSubject, 
-                fileUrl: result.data.filePath,
-                year: new Date().getFullYear(),
-                type: 'Regular'
-            };
+            let endpoint = '';
+            let payload = {};
 
             if (type === 'QB') {
+                endpoint = `/api/subjects/${selectedSubject}`;
+                payload = { questionBankUrl: result.data.filePath };
                 await axios.put(`${import.meta.env.VITE_API_URL || (import.meta.env.DEV ? 'http://localhost:5000' : 'https://backend-1-x7ra.onrender.com')}${endpoint}`, payload, {
                     headers: { Authorization: `Bearer ${token}` }
                 });
-            } else {
+            } else if (type === 'Paper') {
+                endpoint = '/api/previous-papers';
+                payload = { subject: selectedSubject, fileUrl: result.data.filePath, year: new Date().getFullYear(), type: 'Regular' };
+                await axios.post(`${import.meta.env.VITE_API_URL || (import.meta.env.DEV ? 'http://localhost:5000' : 'https://backend-1-x7ra.onrender.com')}${endpoint}`, payload, {
+                    headers: { Authorization: `Bearer ${token}` }
+                });
+            } else if (type === 'Mock') {
+                // For Mock Exam as a FILE
+                endpoint = '/api/mock-exams';
+                payload = { title: selectedFile.name, subject: selectedSubject, totalMarks: 100, duration: 30, questions: [], fileUrl: result.data.filePath };
                 await axios.post(`${import.meta.env.VITE_API_URL || (import.meta.env.DEV ? 'http://localhost:5000' : 'https://backend-1-x7ra.onrender.com')}${endpoint}`, payload, {
                     headers: { Authorization: `Bearer ${token}` }
                 });
@@ -99,8 +125,6 @@ const FacultyDashboard = () => {
         }
         try {
             const token = JSON.parse(localStorage.getItem('user')).token;
-            
-            // 1. Create all questions first
             const questionIds = [];
             for (const q of newExam.questions) {
                 const qRes = await axios.post(`${import.meta.env.VITE_API_URL || (import.meta.env.DEV ? 'http://localhost:5000' : 'https://backend-1-x7ra.onrender.com')}/api/questions`, { ...q, subject: selectedSubject }, {
@@ -109,7 +133,6 @@ const FacultyDashboard = () => {
                 questionIds.push(qRes.data.data._id);
             }
 
-            // 2. Create the exam
             await axios.post(`${import.meta.env.VITE_API_URL || (import.meta.env.DEV ? 'http://localhost:5000' : 'https://backend-1-x7ra.onrender.com')}/api/mock-exams`, {
                 ...newExam,
                 subject: selectedSubject,
@@ -133,11 +156,8 @@ const FacultyDashboard = () => {
             <Box sx={{ mb: 4, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                 <Box>
                     <Typography variant="h3" sx={{ fontWeight: 'bold' }}>Faculty Portal</Typography>
-                    <Typography variant="h6" color="textSecondary">Welcome back! Manage your academic resources here.</Typography>
+                    <Typography variant="h6" color="textSecondary">Manage Subjects, Semesters, and Resource Files.</Typography>
                 </Box>
-                <Avatar sx={{ width: 60, height: 60, bgcolor: 'primary.main' }}>
-                    {JSON.parse(localStorage.getItem('user'))?.name?.charAt(0)}
-                </Avatar>
             </Box>
 
             <Grid container spacing={3}>
@@ -149,18 +169,52 @@ const FacultyDashboard = () => {
                             onChange={(e, v) => setTabValue(v)}
                             sx={{ borderRight: 1, borderColor: 'divider' }}
                         >
-                            <Tab icon={<CloudUpload />} iconPosition="start" label="Resource Center" />
-                            <Tab icon={<AssignmentTurnedIn />} iconPosition="start" label="Mock Exams" />
+                            <Tab icon={<MenuBook />} iconPosition="start" label="Subject & Semester" />
+                            <Tab icon={<CloudUpload />} iconPosition="start" label="ADD NEW FILE" />
+                            <Tab icon={<AssignmentTurnedIn />} iconPosition="start" label="Online Mock Exams" />
                         </Tabs>
                     </Paper>
                 </Grid>
 
                 <Grid item xs={12} md={9}>
                     {tabValue === 0 && (
+                        <Card sx={{ borderRadius: 3 }}>
+                            <CardContent>
+                                <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 3 }}>
+                                    <Typography variant="h5" sx={{ fontWeight: 'bold' }}>Manage Subjects</Typography>
+                                    <Button variant="contained" startIcon={<AddIcon />} onClick={() => setShowSubjectDialog(true)}>Add Subject</Button>
+                                </Box>
+                                <TableContainer>
+                                    <Table>
+                                        <TableHead>
+                                            <TableRow>
+                                                <TableCell>Code</TableCell>
+                                                <TableCell>Name</TableCell>
+                                                <TableCell>Semester</TableCell>
+                                                <TableCell>Credits</TableCell>
+                                            </TableRow>
+                                        </TableHead>
+                                        <TableBody>
+                                            {subjects.map(s => (
+                                                <TableRow key={s._id}>
+                                                    <TableCell>{s.code}</TableCell>
+                                                    <TableCell>{s.name}</TableCell>
+                                                    <TableCell>Sem {s.semester}</TableCell>
+                                                    <TableCell>{s.credits}</TableCell>
+                                                </TableRow>
+                                            ))}
+                                        </TableBody>
+                                    </Table>
+                                </TableContainer>
+                            </CardContent>
+                        </Card>
+                    )}
+
+                    {tabValue === 1 && (
                         <Card sx={{ borderRadius: 3, p: 2 }}>
                             <CardContent>
-                                <Typography variant="h5" gutterBottom sx={{ fontWeight: 'bold' }}>Upload Resources</Typography>
-                                <Typography variant="body2" color="textSecondary" sx={{ mb: 3 }}>Add Question Banks or Previous Papers for your students.</Typography>
+                                <Typography variant="h5" gutterBottom sx={{ fontWeight: 'bold' }}>ADD NEW FILE (QB, Mock, Papers)</Typography>
+                                <Typography variant="body2" color="textSecondary" sx={{ mb: 3 }}>Quickly upload any academic file for a specific subject.</Typography>
                                 
                                 <Grid container spacing={3}>
                                     <Grid item xs={12} md={6}>
@@ -175,28 +229,14 @@ const FacultyDashboard = () => {
                                     <Grid item xs={12} md={6}>
                                         <Button variant="outlined" component="label" fullWidth sx={{ height: '56px' }}>
                                             {selectedFile ? selectedFile.name : 'Choose File (PDF/Excel)'}
-                                            <input type="file" hidden onChange={handleFileChange} />
+                                            <input type="file" hidden onChange={(e) => setSelectedFile(e.target.files[0])} />
                                         </Button>
                                     </Grid>
                                     <Grid item xs={12}>
-                                        <Box sx={{ display: 'flex', gap: 2 }}>
-                                            <Button 
-                                                variant="contained" 
-                                                startIcon={<CloudUpload />} 
-                                                onClick={() => handleUploadResource('QB')}
-                                                disabled={uploading}
-                                            >
-                                                Upload as Question Bank
-                                            </Button>
-                                            <Button 
-                                                variant="contained" 
-                                                color="secondary"
-                                                startIcon={<HistoryEdu />} 
-                                                onClick={() => handleUploadResource('Paper')}
-                                                disabled={uploading}
-                                            >
-                                                Upload as Previous Paper
-                                            </Button>
+                                        <Box sx={{ display: 'flex', gap: 2, flexWrap: 'wrap' }}>
+                                            <Button variant="contained" startIcon={<CloudUpload />} onClick={() => handleUploadResource('QB')} disabled={uploading}>ADD QUESTION BANK</Button>
+                                            <Button variant="contained" color="secondary" startIcon={<AssignmentTurnedIn />} onClick={() => handleUploadResource('Mock')} disabled={uploading}>ADD MOCK EXAM FILE</Button>
+                                            <Button variant="contained" color="info" startIcon={<HistoryEdu />} onClick={() => handleUploadResource('Paper')} disabled={uploading}>ADD PREVIOUS PAPER</Button>
                                         </Box>
                                     </Grid>
                                 </Grid>
@@ -204,12 +244,12 @@ const FacultyDashboard = () => {
                         </Card>
                     )}
 
-                    {tabValue === 1 && (
+                    {tabValue === 2 && (
                         <Card sx={{ borderRadius: 3, p: 2 }}>
                             <CardContent>
                                 <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 3 }}>
-                                    <Typography variant="h5" sx={{ fontWeight: 'bold' }}>Mock Exams</Typography>
-                                    <Button variant="contained" startIcon={<AddIcon />} onClick={() => setShowExamDialog(true)}>Create Online Exam</Button>
+                                    <Typography variant="h5" sx={{ fontWeight: 'bold' }}>Online Mock Exams</Typography>
+                                    <Button variant="contained" startIcon={<AddIcon />} onClick={() => setShowExamDialog(true)}>Create Online Test</Button>
                                 </Box>
                                 <Alert severity="info">Create interactive exams with instant scoring for your students.</Alert>
                             </CardContent>
@@ -217,6 +257,32 @@ const FacultyDashboard = () => {
                     )}
                 </Grid>
             </Grid>
+
+            {/* Subject Builder Dialog */}
+            <Dialog open={showSubjectDialog} onClose={() => setShowSubjectDialog(false)} fullWidth maxWidth="sm">
+                <DialogTitle sx={{ fontWeight: 'bold' }}>Add New Subject</DialogTitle>
+                <DialogContent>
+                    <Box sx={{ mt: 2, display: 'flex', flexDirection: 'column', gap: 2 }}>
+                        <TextField fullWidth label="Subject Name" value={newSubject.name} onChange={(e) => setNewSubject({...newSubject, name: e.target.value})} />
+                        <TextField fullWidth label="Subject Code" value={newSubject.code} onChange={(e) => setNewSubject({...newSubject, code: e.target.value})} />
+                        <Grid container spacing={2}>
+                            <Grid item xs={4}>
+                                <TextField fullWidth type="number" label="Semester" value={newSubject.semester} onChange={(e) => setNewSubject({...newSubject, semester: e.target.value})} />
+                            </Grid>
+                            <Grid item xs={4}>
+                                <TextField fullWidth type="number" label="Credits" value={newSubject.credits} onChange={(e) => setNewSubject({...newSubject, credits: e.target.value})} />
+                            </Grid>
+                            <Grid item xs={4}>
+                                <TextField fullWidth type="number" label="Hrs/Week" value={newSubject.hoursPerWeek} onChange={(e) => setNewSubject({...newSubject, hoursPerWeek: e.target.value})} />
+                            </Grid>
+                        </Grid>
+                    </Box>
+                </DialogContent>
+                <DialogActions sx={{ p: 3 }}>
+                    <Button onClick={() => setShowSubjectDialog(false)}>Cancel</Button>
+                    <Button variant="contained" onClick={handleSaveSubject}>Save Subject</Button>
+                </DialogActions>
+            </Dialog>
 
             {/* Mock Exam Builder Dialog */}
             <Dialog open={showExamDialog} onClose={() => setShowExamDialog(false)} fullWidth maxWidth="md">
@@ -236,37 +302,23 @@ const FacultyDashboard = () => {
                                 </TextField>
                             </Grid>
                         </Grid>
-
                         <Divider sx={{ my: 3 }} />
                         <Typography variant="h6" gutterBottom>Add MCQ Question ({newExam.questions.length} added)</Typography>
-                        
                         <TextField fullWidth multiline rows={2} label="Question Text" value={currentQuestion.content} onChange={(e) => setCurrentQuestion({...currentQuestion, content: e.target.value})} sx={{ mb: 2 }} />
-                        
                         <Grid container spacing={2}>
                             {currentQuestion.options.map((opt, i) => (
                                 <Grid item xs={6} key={i}>
-                                    <TextField 
-                                        fullWidth label={`Option ${i+1}`} 
-                                        value={opt} 
-                                        onChange={(e) => {
-                                            const newOpts = [...currentQuestion.options];
-                                            newOpts[i] = e.target.value;
-                                            setCurrentQuestion({...currentQuestion, options: newOpts});
-                                        }} 
-                                    />
+                                    <TextField fullWidth label={`Option ${i+1}`} value={opt} onChange={(e) => {
+                                        const newOpts = [...currentQuestion.options];
+                                        newOpts[i] = e.target.value;
+                                        setCurrentQuestion({...currentQuestion, options: newOpts});
+                                    }} />
                                 </Grid>
                             ))}
                         </Grid>
-                        
-                        <TextField 
-                            select fullWidth label="Correct Answer" 
-                            value={currentQuestion.correctAnswer} 
-                            onChange={(e) => setCurrentQuestion({...currentQuestion, correctAnswer: e.target.value})}
-                            sx={{ mt: 2 }}
-                        >
+                        <TextField select fullWidth label="Correct Answer" value={currentQuestion.correctAnswer} onChange={(e) => setCurrentQuestion({...currentQuestion, correctAnswer: e.target.value})} sx={{ mt: 2 }}>
                             {currentQuestion.options.map((opt, i) => <MenuItem key={i} value={opt}>{opt || `Option ${i+1}`}</MenuItem>)}
                         </TextField>
-
                         <Button variant="outlined" startIcon={<AddIcon />} onClick={addQuestionToExam} sx={{ mt: 2 }}>Add This Question</Button>
                     </Box>
                 </DialogContent>
