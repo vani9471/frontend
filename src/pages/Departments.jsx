@@ -35,7 +35,7 @@ const Departments = () => {
     const fetchDepartments = async () => {
         setLoading(true);
         try {
-            const res = await axios.get(`${import.meta.env.VITE_API_URL || 'https://backend-1-x7ra.onrender.com'}/api/departments`, {
+            const res = await axios.get(`${import.meta.env.VITE_API_URL || (import.meta.env.DEV ? 'http://localhost:5000' : 'https://backend-1-x7ra.onrender.com')}/api/departments`, {
                 headers: { Authorization: `Bearer ${JSON.parse(localStorage.getItem('user')).token}` }
             });
             setDepartments(res.data.data);
@@ -50,11 +50,11 @@ const Departments = () => {
         try {
             const token = JSON.parse(localStorage.getItem('user')).token;
             if (editMode) {
-                await axios.put(`${import.meta.env.VITE_API_URL || 'https://backend-1-x7ra.onrender.com'}/api/departments/${currentDept._id}`, currentDept, {
+                await axios.put(`${import.meta.env.VITE_API_URL || (import.meta.env.DEV ? 'http://localhost:5000' : 'https://backend-1-x7ra.onrender.com')}/api/departments/${currentDept._id}`, currentDept, {
                     headers: { Authorization: `Bearer ${token}` }
                 });
             } else {
-                await axios.post(`${import.meta.env.VITE_API_URL || 'https://backend-1-x7ra.onrender.com'}/api/departments`, currentDept, {
+                await axios.post(`${import.meta.env.VITE_API_URL || (import.meta.env.DEV ? 'http://localhost:5000' : 'https://backend-1-x7ra.onrender.com')}/api/departments`, currentDept, {
                     headers: { Authorization: `Bearer ${token}` }
                 });
             }
@@ -69,7 +69,7 @@ const Departments = () => {
     const handleDelete = async (id) => {
         if (window.confirm('Are you sure you want to delete this department?')) {
             try {
-                await axios.delete(`${import.meta.env.VITE_API_URL || 'https://backend-1-x7ra.onrender.com'}/api/departments/${id}`, {
+                await axios.delete(`${import.meta.env.VITE_API_URL || (import.meta.env.DEV ? 'http://localhost:5000' : 'https://backend-1-x7ra.onrender.com')}/api/departments/${id}`, {
                     headers: { Authorization: `Bearer ${JSON.parse(localStorage.getItem('user')).token}` }
                 });
                 fetchDepartments();

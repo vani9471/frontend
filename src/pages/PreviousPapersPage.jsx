@@ -21,8 +21,8 @@ const PreviousPapersPage = () => {
             setLoading(true);
             try {
                 const [pRes, sRes] = await Promise.all([
-                    axios.get(`${import.meta.env.VITE_API_URL || 'https://backend-1-x7ra.onrender.com'}/api/previous-papers`),
-                    axios.get(`${import.meta.env.VITE_API_URL || 'https://backend-1-x7ra.onrender.com'}/api/subjects`)
+                    axios.get(`${import.meta.env.VITE_API_URL || (import.meta.env.DEV ? 'http://localhost:5000' : 'https://backend-1-x7ra.onrender.com')}/api/previous-papers`),
+                    axios.get(`${import.meta.env.VITE_API_URL || (import.meta.env.DEV ? 'http://localhost:5000' : 'https://backend-1-x7ra.onrender.com')}/api/subjects`)
                 ]);
                 setPapers(pRes.data.data);
                 setSubjects(sRes.data.data);
