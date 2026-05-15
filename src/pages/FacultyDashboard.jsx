@@ -2,18 +2,50 @@ import React, { useState } from 'react';
 import { 
     Container, Typography, Box, Grid, Paper, 
     Button, Tabs, Tab, List, ListItem, ListItemText, 
-    ListItemIcon, IconButton, TextField, MenuItem 
+    ListItemIcon, IconButton, TextField, MenuItem,
+    CircularProgress, Alert, Snackbar
 } from '@mui/material';
 import { 
     CloudUpload, PostAdd, HistoryEdu, AssignmentTurnedIn,
     Delete, Edit, CheckCircle 
 } from '@mui/icons-material';
+import fileService from '../services/fileService';
 
 const FacultyDashboard = () => {
     const [tabValue, setTabValue] = useState(0);
+    const [selectedFile, setSelectedFile] = useState(null);
+    const [uploading, setUploading] = useState(false);
+    const [message, setMessage] = useState({ text: '', type: 'success' });
+    const [openSnackbar, setOpenSnackbar] = useState(false);
 
     const handleTabChange = (event, newValue) => {
         setTabValue(newValue);
+        setSelectedFile(null);
+    };
+
+    const handleFileChange = (e) => {
+        setSelectedFile(e.target.files[0]);
+    };
+
+    const handleUpload = async () => {
+        if (!selectedFile) {
+            setMessage({ text: 'Please select a file first', type: 'error' });
+            setOpenSnackbar(true);
+            return;
+        }
+
+        setUploading(true);
+        try {
+            const result = await fileService.uploadFile(selectedFile);
+            setMessage({ text: `File uploaded successfully: ${result.data.originalName}`, type: 'success' });
+            setOpenSnackbar(true);
+            setSelectedFile(null);
+        } catch (err) {
+            setMessage({ text: err.response?.data?.message || 'Upload failed', type: 'error' });
+            setOpenSnackbar(true);
+        } finally {
+            setUploading(false);
+        }
     };
 
     return (
@@ -79,10 +111,22 @@ const FacultyDashboard = () => {
                                 <Typography variant="body1" color="textSecondary" sx={{ mb: 4 }}>
                                     Upload an Excel or CSV file to import questions in bulk.
                                 </Typography>
-                                <Button variant="outlined" component="label">
-                                    Select File
-                                    <input type="file" hidden />
-                                </Button>
+                                <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 2 }}>
+                                    <Button variant="outlined" component="label">
+                                        {selectedFile ? selectedFile.name : 'Select File'}
+                                        <input type="file" hidden onChange={handleFileChange} accept=".xlsx,.xls,.csv" />
+                                    </Button>
+                                    {selectedFile && (
+                                        <Button 
+                                            variant="contained" 
+                                            onClick={handleUpload} 
+                                            disabled={uploading}
+                                            startIcon={uploading ? <CircularProgress size={20} color="inherit" /> : <CloudUpload />}
+                                        >
+                                            {uploading ? 'Uploading...' : 'Confirm Upload'}
+                                        </Button>
+                                    )}
+                                </Box>
                             </Box>
                         )}
 
@@ -90,7 +134,6 @@ const FacultyDashboard = () => {
                             <Box>
                                 <Typography variant="h5" gutterBottom sx={{ fontWeight: 'bold' }}>Create Mock Exam</Typography>
                                 <Typography color="textSecondary">Create a new timer-based exam for your students.</Typography>
-                                {/* Form for Mock Exam creation would go here */}
                                 <Button variant="contained" sx={{ mt: 2 }}>Define New Exam</Button>
                             </Box>
                         )}
@@ -114,10 +157,22 @@ const FacultyDashboard = () => {
                                         </TextField>
                                     </Grid>
                                     <Grid item xs={12}>
-                                        <Button variant="contained" component="label">
-                                            Upload PDF
-                                            <input type="file" hidden accept=".pdf" />
-                                        </Button>
+                                        <Box sx={{ display: 'flex', gap: 2, alignItems: 'center' }}>
+                                            <Button variant="outlined" component="label">
+                                                {selectedFile ? selectedFile.name : 'Select PDF'}
+                                                <input type="file" hidden accept=".pdf" onChange={handleFileChange} />
+                                            </Button>
+                                            {selectedFile && (
+                                                <Button 
+                                                    variant="contained" 
+                                                    onClick={handleUpload} 
+                                                    disabled={uploading}
+                                                    startIcon={uploading ? <CircularProgress size={20} color="inherit" /> : <CloudUpload />}
+                                                >
+                                                    {uploading ? 'Uploading...' : 'Upload Now'}
+                                                </Button>
+                                            )}
+                                        </Box>
                                     </Grid>
                                 </Grid>
                             </Box>
@@ -125,8 +180,20 @@ const FacultyDashboard = () => {
                     </Paper>
                 </Grid>
             </Grid>
+
+            <Snackbar 
+                open={openSnackbar} 
+                autoHideDuration={6000} 
+                onClose={() => setOpenSnackbar(false)}
+                anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
+            >
+                <Alert onClose={() => setOpenSnackbar(false)} severity={message.type} sx={{ width: '100%' }}>
+                    {message.text}
+                </Alert>
+            </Snackbar>
         </Container>
     );
 };
 
 export default FacultyDashboard;
+
