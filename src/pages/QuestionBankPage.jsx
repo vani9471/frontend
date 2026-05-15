@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useParams } from 'react-router-dom';
 import { 
     Container, Typography, Box, Accordion, AccordionSummary, 
-    AccordionDetails, Chip, List, ListItem, ListItemText, 
+    AccordionDetails, Chip, List, ListItem, ListItemText, ListItemIcon,
     Divider, Grid, Paper, Tabs, Tab, Skeleton, Alert 
 } from '@mui/material';
 import ExpandMore from '@mui/icons-material/ExpandMore';
@@ -24,13 +24,13 @@ const QuestionBankPage = () => {
             setLoading(true);
             try {
                 // Fetch subject details
-                const subRes = await axios.get(`http://localhost:5000/api/subjects`);
+                const subRes = await axios.get(`${import.meta.env.VITE_API_URL || 'http://localhost:5000'}/api/subjects`);
                 const currentSub = subRes.data.data.find(s => s.code === code);
                 
                 if (currentSub) {
                     setSubject(currentSub);
                     // Fetch questions for this subject
-                    const qRes = await axios.get(`http://localhost:5000/api/questions?subject=${currentSub._id}`);
+                    const qRes = await axios.get(`${import.meta.env.VITE_API_URL || 'http://localhost:5000'}/api/questions?subject=${currentSub._id}`);
                     setQuestions(qRes.data.data);
                 } else {
                     setError('Subject not found.');

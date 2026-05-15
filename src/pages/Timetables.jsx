@@ -34,7 +34,7 @@ const Timetables = () => {
 
     const fetchDepartments = async () => {
         try {
-            const res = await axios.get('http://localhost:5000/api/departments', {
+            const res = await axios.get(`${import.meta.env.VITE_API_URL || 'http://localhost:5000'}/api/departments`, {
                 headers: { Authorization: `Bearer ${JSON.parse(localStorage.getItem('user')).token}` }
             });
             setDepartments(res.data.data);
@@ -49,7 +49,7 @@ const Timetables = () => {
         setLoading(true);
         setError('');
         try {
-            const res = await axios.get(`http://localhost:5000/api/timetables?department=${selectedDept}&semester=${selectedSem}`, {
+            const res = await axios.get(`${import.meta.env.VITE_API_URL || 'http://localhost:5000'}/api/timetables?department=${selectedDept}&semester=${selectedSem}`, {
                 headers: { Authorization: `Bearer ${JSON.parse(localStorage.getItem('user')).token}` }
             });
             setTimetable(res.data.data[0] || null);
@@ -63,7 +63,7 @@ const Timetables = () => {
     const handleGenerate = async () => {
         setGenerating(true);
         try {
-            await axios.post('http://localhost:5000/api/timetables/generate', {
+            await axios.post(`${import.meta.env.VITE_API_URL || 'http://localhost:5000'}/api/timetables/generate`, {
                 department: selectedDept,
                 semester: selectedSem,
                 section: 'A',

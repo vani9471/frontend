@@ -28,13 +28,13 @@ const MockExamPage = () => {
         const fetchData = async () => {
             setLoading(true);
             try {
-                const subRes = await axios.get(`http://localhost:5000/api/subjects`);
+                const subRes = await axios.get(`${import.meta.env.VITE_API_URL || 'http://localhost:5000'}/api/subjects`);
                 const currentSub = subRes.data.data.find(s => s.code === code);
                 
                 if (currentSub) {
                     setSubject(currentSub);
                     // Fetch mock exam for this subject
-                    const examRes = await axios.get(`http://localhost:5000/api/mock-exams?subject=${currentSub._id}`);
+                    const examRes = await axios.get(`${import.meta.env.VITE_API_URL || 'http://localhost:5000'}/api/mock-exams?subject=${currentSub._id}`);
                     if (examRes.data.data.length > 0) {
                         const exam = examRes.data.data[0];
                         setMockExam(exam);
@@ -42,7 +42,7 @@ const MockExamPage = () => {
                         setTimeLeft(exam.duration * 60);
                     } else {
                         // Fallback: fetch random MCQ questions
-                        const qRes = await axios.get(`http://localhost:5000/api/questions?subject=${currentSub._id}`);
+                        const qRes = await axios.get(`${import.meta.env.VITE_API_URL || 'http://localhost:5000'}/api/questions?subject=${currentSub._id}`);
                         const mcqs = qRes.data.data.filter(q => q.options && q.options.length > 0);
                         setQuestions(mcqs);
                         setTimeLeft(20 * 60); // 20 mins default
@@ -92,7 +92,7 @@ const MockExamPage = () => {
         try {
             const examId = mockExam?._id || subject?._id;
             // Assuming we have a result model on backend
-            await axios.post(`http://localhost:5000/api/mock-exams/${examId}/submit`, resultData);
+            await axios.post(`${import.meta.env.VITE_API_URL || 'http://localhost:5000'}/api/mock-exams/${examId}/submit`, resultData);
             setResult(resultData);
         } catch (err) {
             console.error(err);

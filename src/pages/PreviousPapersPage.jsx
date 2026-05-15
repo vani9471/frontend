@@ -21,8 +21,8 @@ const PreviousPapersPage = () => {
             setLoading(true);
             try {
                 const [pRes, sRes] = await Promise.all([
-                    axios.get('http://localhost:5000/api/previous-papers'),
-                    axios.get('http://localhost:5000/api/subjects')
+                    axios.get(`${import.meta.env.VITE_API_URL || 'http://localhost:5000'}/api/previous-papers`),
+                    axios.get(`${import.meta.env.VITE_API_URL || 'http://localhost:5000'}/api/subjects`)
                 ]);
                 setPapers(pRes.data.data);
                 setSubjects(sRes.data.data);

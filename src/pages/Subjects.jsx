@@ -36,7 +36,7 @@ const Subjects = () => {
     const fetchSubjects = async () => {
         setLoading(true);
         try {
-            const res = await axios.get('http://localhost:5000/api/subjects', {
+            const res = await axios.get(`${import.meta.env.VITE_API_URL || 'http://localhost:5000'}/api/subjects`, {
                 headers: { Authorization: `Bearer ${JSON.parse(localStorage.getItem('user')).token}` }
             });
             setSubjects(res.data.data);
@@ -49,7 +49,7 @@ const Subjects = () => {
 
     const fetchDepartments = async () => {
         try {
-            const res = await axios.get('http://localhost:5000/api/departments', {
+            const res = await axios.get(`${import.meta.env.VITE_API_URL || 'http://localhost:5000'}/api/departments`, {
                 headers: { Authorization: `Bearer ${JSON.parse(localStorage.getItem('user')).token}` }
             });
             setDepartments(res.data.data);
@@ -62,11 +62,11 @@ const Subjects = () => {
         try {
             const token = JSON.parse(localStorage.getItem('user')).token;
             if (editMode) {
-                await axios.put(`http://localhost:5000/api/subjects/${currentSubject._id}`, currentSubject, {
+                await axios.put(`${import.meta.env.VITE_API_URL || 'http://localhost:5000'}/api/subjects/${currentSubject._id}`, currentSubject, {
                     headers: { Authorization: `Bearer ${token}` }
                 });
             } else {
-                await axios.post('http://localhost:5000/api/subjects', currentSubject, {
+                await axios.post(`${import.meta.env.VITE_API_URL || 'http://localhost:5000'}/api/subjects`, currentSubject, {
                     headers: { Authorization: `Bearer ${token}` }
                 });
             }
@@ -81,7 +81,7 @@ const Subjects = () => {
     const handleDelete = async (id) => {
         if (window.confirm('Delete this subject?')) {
             try {
-                await axios.delete(`http://localhost:5000/api/subjects/${id}`, {
+                await axios.delete(`${import.meta.env.VITE_API_URL || 'http://localhost:5000'}/api/subjects/${id}`, {
                     headers: { Authorization: `Bearer ${JSON.parse(localStorage.getItem('user')).token}` }
                 });
                 fetchSubjects();
